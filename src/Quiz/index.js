@@ -1,75 +1,45 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-function fetchData() {
-  const quiz = [
-    {
-      id: 1,
-      question: "What is 2 + 2 ",
-      answers: { a: "4", b: "3", c: "22", d: "5" },
-    },
-    {
-      id: 2,
-      question: "2",
-      answers: { a: "4", b: "3", c: "22", d: "5" },
-    },
-    {
-      id: 3,
-      question: "3",
-      answers: { a: "4", b: "3", c: "22", d: "5" },
-    },
-    {
-      id: 4,
-      question: "4",
-      answers: { a: "4", b: "3", c: "22", d: "5" },
-    },
-    {
-      id: 5,
-      question: "5",
-      answers: { a: "4", b: "3", c: "22", d: "5" },
-    },
-  ];
-
-  //console.log("oh quiz", testQuiz);
-
-  return quiz;
-}
-
-let currentQuestion = 1;
-
 function Quiz() {
-  const allQuestion = fetchData();
-  const [testallQuestion, setAllQuestion] = useState([]);
+  const [allQuestion, setAllQuestion] = useState([]);
+  const [quiz, setQuiz] = useState({});
+  const [currentQuestion, setCurrentQuestion] = useState(1);
+  const [scores, setScores] = useState(0);
+  const [timer, setTimer] = useState(10);
+  const [isFinish, setIsFinish] = useState(false);
+
   useEffect(() => {
-    const testQuiz = async () => {
+    const fetchData = async () => {
       const response = await axios.get("http://localhost:4000/api/quiz");
-      console.log("response", response.data);
       setAllQuestion(response.data);
+      let displayQuestion = response.data.filter(
+        (d) => d.id == currentQuestion
+      );
+      setQuiz(() => displayQuestion[0]);
     };
-    testQuiz();
+    fetchData();
   }, []);
 
-  // const [currentQuestion, setCurrentQuestion] = useState(1)
-
-  console.log("test", testallQuestion);
-  let displayQuestion = allQuestion.filter((d) => d.id == currentQuestion);
-  const [quiz, setQuiz] = useState(() => displayQuestion[0]);
   const [anwsers, setAnwsers] = useState(() => []);
   const [isSelect, setIsSelect] = useState(() => "");
 
-  function setNextQuestion() {
-    currentQuestion++;
-    displayQuestion = allQuestion.filter((d) => d.id == currentQuestion);
+  function setNextQuestion(currentQuestion) {
+    currentQuestion = currentQuestion + 1;
+    setCurrentQuestion(() => currentQuestion);
+    let displayQuestion = allQuestion.filter((d) => d.id == currentQuestion);
     let ansQuiz = anwsers.filter((a) => a.id == currentQuestion);
     let isSelectAns = ansQuiz.length > 0 ? ansQuiz[0].answer : "";
 
     setQuiz(() => displayQuestion[0]);
     setIsSelect(() => isSelectAns);
+    setTimer(10);
   }
 
-  function setPrevQuestion() {
-    currentQuestion--;
-    displayQuestion = allQuestion.filter((d) => d.id == currentQuestion);
+  function setPrevQuestion(currentQuestion) {
+    currentQuestion = currentQuestion - 1;
+    setCurrentQuestion(() => currentQuestion);
+    let displayQuestion = allQuestion.filter((d) => d.id == currentQuestion);
     setQuiz(() => displayQuestion[0]);
     let ansQuiz = anwsers.filter((a) => a.id == currentQuestion);
 
@@ -84,55 +54,91 @@ function Quiz() {
     setAnwsers([...ans, answer]);
   }
 
-  function getAllAns() {
-    return { 1: "4", 2: "22", 3: "3", 4: "dfv", 5: "sdfd" };
-  }
+  const finishQuiz = async () => {
+    console.log("finish");
+    const response = await axios.get("http://localhost:4000/api/quiz/answer");
+    let allAns = response.data;
 
-  function finishQuiz() {
-    let allAns = getAllAns();
-    console.log("1", allAns);
-    console.log("2", anwsers);
-    let scores = 0;
-    anwsers.forEach((data) => {
-      const ans = allAns[data.id];
-      if (ans === data.answer) {
-        scores += 1;
+    let result = 0;
+    if (allAns !== undefined) {
+      anwsers.forEach((data) => {
+        const ans = allAns[data.id];
+        if (ans === data.answer) {
+          result += 1;
+        }
+      });
+    }
+
+    setScores(() => result);
+    setQuiz({});
+    setIsFinish(true);
+  };
+
+  const TimerCountdown = () => {
+    useEffect(() => {
+      let interval = null;
+      if (timer > 0) {
+        interval = setInterval(() => {
+          setTimer((timer) => timer - 1);
+        }, 1000);
+      } else {
+        clearInterval(interval);
+        finishQuiz();
       }
-    });
 
-    console.log("score", scores);
-  }
+      return () => clearInterval(interval);
+    }, [timer]);
+
+    return <div>Time left: {timer} </div>;
+  };
 
   return (
     <>
       {quiz && (
         <div>
-          <h1>{/* {quiz.id}/{allQuestion.length} */}</h1>
+          <h1>{!isFinish && quiz.id / allQuestion.length}</h1>
+          <p>{TimerCountdown()} </p>
           <h2>{quiz.question}</h2>
-          {Object.keys(quiz.answers).map((d, i) => (
-            <div
-              key={i}
-              onClick={() => selectAnswer(quiz.id, quiz.answers[d], i)}
-              className={isSelect === quiz.answers[d] ? "select" : ""}
-            >
-              {d}.{quiz.answers[d]}
-            </div>
-          ))}
-          {currentQuestion > 1 && (
-            <button onClick={setPrevQuestion}>prev</button>
-          )}
-          {currentQuestion === allQuestion.length ? (
-            <button onClick={finishQuiz} disabled={!isSelect ? true : false}>
-              finish
+          {quiz.answers &&
+            Object.keys(quiz.answers).map((d, i) => (
+              <div
+                key={i}
+                onClick={() => selectAnswer(quiz.id, quiz.answers[d], i)}
+                className={isSelect === quiz.answers[d] ? "select" : ""}
+              >
+                {d}.{quiz.answers[d]}
+              </div>
+            ))}
+
+          {!isFinish && currentQuestion > 1 && (
+            <button onClick={() => setPrevQuestion(currentQuestion)}>
+              prev
             </button>
+          )}
+          {!isFinish ? (
+            currentQuestion === allQuestion.length ? (
+              <button
+                onClick={() => finishQuiz()}
+                disabled={!isSelect ? true : false}
+              >
+                finish
+              </button>
+            ) : (
+              <button
+                onClick={() => setNextQuestion(currentQuestion)}
+                disabled={!isSelect ? true : false}
+              >
+                next
+              </button>
+            )
           ) : (
-            <button
-              onClick={setNextQuestion}
-              disabled={!isSelect ? true : false}
-            >
-              next
-            </button>
+            <div></div>
           )}
+        </div>
+      )}
+      {isFinish && (
+        <div>
+          Your scores: {scores} out of {allQuestion.length}
         </div>
       )}
     </>
