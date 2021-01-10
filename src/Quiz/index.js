@@ -8,6 +8,7 @@ function Quiz() {
   const [scores, setScores] = useState(0);
   const [timer, setTimer] = useState(10);
   const [isFinish, setIsFinish] = useState(false);
+  const alphabet = "abcdefghijklmnopqrstuvwxyz".split("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,27 +50,20 @@ function Quiz() {
   function selectAnswer(id, result) {
     let answer = { id, answer: result };
     let ans = anwsers.filter((data) => data.id !== id);
-
     setIsSelect(result);
     setAnwsers([...ans, answer]);
   }
 
   const finishQuiz = async () => {
-    console.log("finish");
-    const response = await axios.get("http://localhost:4000/api/quiz/answer");
-    let allAns = response.data;
+    setTimer(0);
 
-    let result = 0;
-    if (allAns !== undefined) {
-      anwsers.forEach((data) => {
-        const ans = allAns[data.id];
-        if (ans === data.answer) {
-          result += 1;
-        }
-      });
-    }
+    const response = await axios.post(
+      "http://localhost:4000/api/quiz/submit",
+      anwsers
+    );
+    let score = response.data.score;
 
-    setScores(() => result);
+    setScores(() => score);
     setQuiz({});
     setIsFinish(true);
   };
@@ -89,24 +83,24 @@ function Quiz() {
       return () => clearInterval(interval);
     }, [timer]);
 
-    return <div>Time left: {timer} </div>;
+    return <div>{isFinish ? `` : `Time left: ${timer}`} </div>;
   };
 
   return (
     <>
       {quiz && (
         <div>
-          <h1>{!isFinish && quiz.id / allQuestion.length}</h1>
-          <p>{TimerCountdown()} </p>
+          <h1>{!isFinish && `${quiz.id} ${`/`} ${allQuestion.length}`}</h1>
+          {TimerCountdown()}
           <h2>{quiz.question}</h2>
-          {quiz.answers &&
-            Object.keys(quiz.answers).map((d, i) => (
+          {quiz.choices &&
+            quiz.choices.map((d, i) => (
               <div
                 key={i}
-                onClick={() => selectAnswer(quiz.id, quiz.answers[d], i)}
-                className={isSelect === quiz.answers[d] ? "select" : ""}
+                onClick={() => selectAnswer(quiz.id, d.id)}
+                className={isSelect === d.id ? "select" : ""}
               >
-                {d}.{quiz.answers[d]}
+                {alphabet[i]}. {d.text}
               </div>
             ))}
 
