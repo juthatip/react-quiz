@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+// import Checkboxes from "./Checkbox";
+import Checkbox from "@material-ui/core/Checkbox";
 
 function Quiz() {
   const [allQuestion, setAllQuestion] = useState([]);
@@ -12,7 +14,7 @@ function Quiz() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const response = await axios.get("http://localhost:4000/api/quiz");
+      const response = await axios.get("http://localhost:4000/api/quiz/1");
       setAllQuestion(response.data);
       let displayQuestion = response.data.filter(
         (d) => d.id == currentQuestion
@@ -48,6 +50,7 @@ function Quiz() {
   }
 
   function selectAnswer(id, result) {
+    console.log("selectAnswer---", result);
     let answer = { id, answer: result };
     let ans = anwsers.filter((data) => data.id !== id);
     setIsSelect(result);
@@ -85,6 +88,56 @@ function Quiz() {
 
     return <div>{isFinish ? `` : `Time left: ${timer}`} </div>;
   };
+
+  const [checked, setChecked] = useState([]);
+  const checkedId = useRef(checked);
+
+  const HandleChange = (id, val) => {
+    if (checked.length > 0) {
+      if (checked.includes(val)) {
+        const filteredItems = checked.filter((item) => {
+          return item !== val;
+        });
+        setChecked(filteredItems);
+      } else {
+        setChecked([...checked, val]);
+      }
+    } else {
+      setChecked([val]);
+    }
+
+    checkedId.current = id;
+  };
+
+  useEffect(() => {
+    // console.log("checkedItems: ", checkedId.current);
+    let result = { id: "11", answer: checked };
+    let a = [];
+    //     anwsers.map(d => {
+    //       if(d.id == result[id]) {
+    // a = [...anwsers, result]
+    //       } else {
+
+    //       }
+    //     })
+    setAnwsers([...anwsers, result]);
+    console.log("result", result);
+  }, [checked]);
+
+  const mock = [
+    {
+      id: "1111",
+      question: "This is a test check box",
+      choices: [
+        { id: 1, text: "checkbox 1" },
+        { id: 2, text: "checkbox 2" },
+        { id: 3, text: "checkbox 3" },
+        { id: 4, text: "checkbox 4" },
+      ],
+    },
+  ];
+
+  // console.log("checked 2", checked);
 
   return (
     <>
@@ -135,6 +188,32 @@ function Quiz() {
           Your scores: {scores} out of {allQuestion.length}
         </div>
       )}
+
+      {"Mock checkbocx"}
+      {mock.map((d) => {
+        return (
+          <div key={d.id}>
+            <div> {d.question}</div>
+            <div>
+              {d.choices.map((c, i) => {
+                return (
+                  <>
+                    <Checkbox
+                      key={c.id}
+                      onClick={(e) => HandleChange(d.id, c.id)}
+                      inputProps={{ "aria-label": "primary checkbox" }}
+                      color="primary"
+                      value={c.text}
+                      ref={checkedId}
+                    />
+                    {c.text}
+                  </>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </>
   );
 }
