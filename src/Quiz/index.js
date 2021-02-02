@@ -60,10 +60,13 @@ function Quiz() {
   const finishQuiz = async () => {
     setTimer(0);
 
+    const resultAll = [...anwsers, ...checkedBoxResult];
     const response = await axios.post(
       "http://localhost:4000/api/quiz/submit",
-      anwsers
+      resultAll
     );
+
+    console.log("..resultAll", resultAll);
     let score = response.data.score;
 
     setScores(() => score);
@@ -90,6 +93,7 @@ function Quiz() {
   };
 
   const [checked, setChecked] = useState([]);
+  const [checkedBoxResult, setCheckedBoxResult] = useState([]);
   const checkedId = useRef(checked);
 
   const HandleChange = (id, val) => {
@@ -110,18 +114,8 @@ function Quiz() {
   };
 
   useEffect(() => {
-    // console.log("checkedItems: ", checkedId.current);
-    let result = { id: "11", answer: checked };
-    let a = [];
-    //     anwsers.map(d => {
-    //       if(d.id == result[id]) {
-    // a = [...anwsers, result]
-    //       } else {
-
-    //       }
-    //     })
-    setAnwsers([...anwsers, result]);
-    console.log("result", result);
+    let result = { id: checkedId.current, answer: checked };
+    setCheckedBoxResult([result]);
   }, [checked]);
 
   const mock = [
