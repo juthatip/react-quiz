@@ -16,10 +16,12 @@ function Quiz() {
     const fetchData = async () => {
       const response = await axios.get("http://localhost:4000/api/quiz/1");
       setAllQuestion(response.data);
-      let displayQuestion = response.data.filter(
-        (d) => d.id == currentQuestion
-      );
-      setQuiz(() => displayQuestion[0]);
+      if (response.data) {
+        let displayQuestion = response.data.filter(
+          (d) => d.id == currentQuestion
+        );
+        setQuiz(() => displayQuestion[0]);
+      }
     };
     fetchData();
   }, []);
@@ -61,13 +63,19 @@ function Quiz() {
     setTimer(0);
 
     const resultAll = [...anwsers, ...checkedBoxResult];
-    const response = await axios.post(
-      "http://localhost:4000/api/quiz/submit",
-      resultAll
-    );
 
-    console.log("..resultAll", resultAll);
-    let score = response.data.score;
+    console.log("oh", resultAll);
+    console.log("oh anwsers", anwsers);
+    console.log("oh checkedBoxResult", checkedBoxResult);
+
+    // const response = await axios.post(
+    //   "http://localhost:4000/api/quiz/submit",
+    //   resultAll
+    // );
+
+    // console.log("..resultAll", resultAll);
+    // let score = response.data.score;
+    let score = 0;
 
     setScores(() => score);
     setQuiz({});
@@ -94,7 +102,7 @@ function Quiz() {
 
   const [checked, setChecked] = useState([]);
   const [checkedBoxResult, setCheckedBoxResult] = useState([]);
-  const checkedId = useRef(checked);
+  const checkedId = useRef(null);
 
   const HandleChange = (id, val) => {
     if (checked.length > 0) {
@@ -109,14 +117,19 @@ function Quiz() {
     } else {
       setChecked([val]);
     }
-
+    console.log("checkedId.current", checkedId.current);
     checkedId.current = id;
+
+    // let result = { id, answer: checked };
+    // console.log("id", checkedId.current);
+    // setCheckedBoxResult([result]);
   };
 
-  useEffect(() => {
-    let result = { id: checkedId.current, answer: checked };
-    setCheckedBoxResult([result]);
-  }, [checked]);
+  // useEffect(() => {
+  //   let result = { id: checkedId.current, answer: checked };
+  //   console.log("id", checkedId.current);
+  //   setCheckedBoxResult([result]);
+  // }, [checked]);
 
   const mock = [
     {
@@ -140,16 +153,41 @@ function Quiz() {
           <h1>{!isFinish && `${quiz.id} ${`/`} ${allQuestion.length}`}</h1>
           {TimerCountdown()}
           <h2>{quiz.question}</h2>
-          {quiz.choices &&
-            quiz.choices.map((d, i) => (
-              <div
-                key={i}
-                onClick={() => selectAnswer(quiz.id, d.id)}
-                className={isSelect === d.id ? "select" : ""}
-              >
-                {alphabet[i]}. {d.text}
-              </div>
-            ))}
+          {quiz.type === "single" ? (
+            quiz.choices &&
+            quiz.choices.map((d, i) => {
+              return (
+                <>
+                  <div
+                    key={i}
+                    onClick={() => selectAnswer(quiz.id, d.id)}
+                    className={isSelect === d.id ? "select" : ""}
+                  >
+                    {alphabet[i]}. {d.text}
+                  </div>
+                </>
+              );
+            })
+          ) : quiz.type === "multiple" ? (
+            quiz.choices &&
+            quiz.choices.map((d, i) => {
+              return (
+                <>
+                  <Checkbox
+                    key={i}
+                    onClick={(e) => selectAnswer(quiz.id, d.id)}
+                    inputProps={{ "aria-label": "primary checkbox" }}
+                    color="primary"
+                    value={d.text}
+                    ref={checkedId}
+                  />
+                  {d.text}
+                </>
+              );
+            })
+          ) : (
+            <>{"no type"}</>
+          )}
 
           {!isFinish && currentQuestion > 1 && (
             <button onClick={() => setPrevQuestion(currentQuestion)}>
@@ -182,32 +220,6 @@ function Quiz() {
           Your scores: {scores} out of {allQuestion.length}
         </div>
       )}
-
-      {"Mock checkbocx"}
-      {mock.map((d) => {
-        return (
-          <div key={d.id}>
-            <div> {d.question}</div>
-            <div>
-              {d.choices.map((c, i) => {
-                return (
-                  <>
-                    <Checkbox
-                      key={c.id}
-                      onClick={(e) => HandleChange(d.id, c.id)}
-                      inputProps={{ "aria-label": "primary checkbox" }}
-                      color="primary"
-                      value={c.text}
-                      ref={checkedId}
-                    />
-                    {c.text}
-                  </>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
     </>
   );
 }
