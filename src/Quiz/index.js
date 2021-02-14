@@ -3,6 +3,8 @@ import axios from "axios";
 // import Checkboxes from "./Checkbox";
 import Checkbox from "@material-ui/core/Checkbox";
 
+let checked = [];
+
 function Quiz() {
   const [allQuestion, setAllQuestion] = useState([]);
   const [quiz, setQuiz] = useState({});
@@ -11,6 +13,7 @@ function Quiz() {
   const [timer, setTimer] = useState(10);
   const [isFinish, setIsFinish] = useState(false);
   const alphabet = "abcdefghijklmnopqrstuvwxyz".split("");
+  // const [checkedTest, setChecked] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -18,7 +21,7 @@ function Quiz() {
       setAllQuestion(response.data);
       if (response.data) {
         let displayQuestion = response.data.filter(
-          (d) => d.id == currentQuestion
+          (d) => d.id === currentQuestion
         );
         setQuiz(() => displayQuestion[0]);
       }
@@ -28,54 +31,99 @@ function Quiz() {
 
   const [anwsers, setAnwsers] = useState(() => []);
   const [isSelect, setIsSelect] = useState(() => "");
+  const [isChecked, setIsChecked] = useState(() => {});
 
   function setNextQuestion(currentQuestion) {
     currentQuestion = currentQuestion + 1;
     setCurrentQuestion(() => currentQuestion);
-    let displayQuestion = allQuestion.filter((d) => d.id == currentQuestion);
-    let ansQuiz = anwsers.filter((a) => a.id == currentQuestion);
+    let displayQuestion = allQuestion.filter((d) => d.id === currentQuestion);
+    let ansQuiz = anwsers.filter((a) => a.id === currentQuestion);
     let isSelectAns = ansQuiz.length > 0 ? ansQuiz[0].answer : "";
 
     setQuiz(() => displayQuestion[0]);
     setIsSelect(() => isSelectAns);
     setTimer(10);
+
+    setIsChecked(() => {});
+    checked = {};
+    if (ansQuiz.length > 0 && ansQuiz[0].type === "multiple") {
+      let defaultAns = ansQuiz[0].answer.reduce((result, item, i) => {
+        result[item] = true;
+        return result;
+      }, {});
+      setIsChecked({
+        ...defaultAns,
+      });
+    }
   }
 
   function setPrevQuestion(currentQuestion) {
     currentQuestion = currentQuestion - 1;
     setCurrentQuestion(() => currentQuestion);
-    let displayQuestion = allQuestion.filter((d) => d.id == currentQuestion);
+    let displayQuestion = allQuestion.filter((d) => d.id === currentQuestion);
     setQuiz(() => displayQuestion[0]);
-    let ansQuiz = anwsers.filter((a) => a.id == currentQuestion);
+    let ansQuiz = anwsers.filter((a) => a.id === currentQuestion);
+    let isSelectAns = ansQuiz.length > 0 ? ansQuiz[0].answer : "";
+    setIsSelect(isSelectAns);
 
-    setIsSelect(ansQuiz[0].answer);
+    checked = {};
+    if (ansQuiz.length > 0 && ansQuiz[0].type === "multiple") {
+      let defaultAns = ansQuiz[0].answer.reduce((result, item, i) => {
+        result[item] = true;
+        return result;
+      }, {});
+
+      setIsChecked({
+        ...defaultAns,
+      });
+    }
   }
 
-  function selectAnswer(id, result) {
-    console.log("selectAnswer---", result);
-    let answer = { id, answer: result };
+  function selectAnswer(id, result, type) {
+    let answer = { id, answer: result, type };
     let ans = anwsers.filter((data) => data.id !== id);
     setIsSelect(result);
     setAnwsers([...ans, answer]);
+    setIsChecked({});
+  }
+
+  const selectAnswerCheckbox = (e, id, result, type) => {
+    const answer = HandleChange(id, result, type);
+
+    let ans = anwsers.filter((data) => data.id !== id);
+    setAnwsers([...ans, answer]);
+
+    let checkedResult = { id, [result]: e.target.checked };
+
+    setIsChecked({
+      ...isChecked,
+      ...checkedResult,
+    });
+  };
+
+  function isCheckedbox(result) {
+    let checked = false;
+
+    if (isChecked && isChecked[result]) {
+      checked = isChecked[result];
+    }
+
+    return checked;
   }
 
   const finishQuiz = async () => {
     setTimer(0);
 
-    const resultAll = [...anwsers, ...checkedBoxResult];
+    const resultAll = [...anwsers];
 
-    console.log("oh", resultAll);
-    console.log("oh anwsers", anwsers);
-    console.log("oh checkedBoxResult", checkedBoxResult);
-
-    // const response = await axios.post(
-    //   "http://localhost:4000/api/quiz/submit",
-    //   resultAll
-    // );
-
-    // console.log("..resultAll", resultAll);
-    // let score = response.data.score;
     let score = 0;
+    if (resultAll.length) {
+      const response = await axios.post(
+        "http://localhost:4000/api/quiz/submit",
+        resultAll
+      );
+      score = response.data.score;
+    }
 
     setScores(() => score);
     setQuiz({});
@@ -100,30 +148,27 @@ function Quiz() {
     return <div>{isFinish ? `` : `Time left: ${timer}`} </div>;
   };
 
-  const [checked, setChecked] = useState([]);
   const [checkedBoxResult, setCheckedBoxResult] = useState([]);
   const checkedId = useRef(null);
 
-  const HandleChange = (id, val) => {
+  function HandleChange(id, val, type) {
+    let ansQuiz = anwsers && anwsers.filter((a) => a.id === id);
+    checked = ansQuiz.length > 0 ? ansQuiz[0].answer : [];
+
     if (checked.length > 0) {
       if (checked.includes(val)) {
-        const filteredItems = checked.filter((item) => {
+        checked = checked.filter((item) => {
           return item !== val;
         });
-        setChecked(filteredItems);
       } else {
-        setChecked([...checked, val]);
+        checked = [...checked, val];
       }
     } else {
-      setChecked([val]);
+      checked = [val];
     }
-    console.log("checkedId.current", checkedId.current);
-    checkedId.current = id;
 
-    // let result = { id, answer: checked };
-    // console.log("id", checkedId.current);
-    // setCheckedBoxResult([result]);
-  };
+    return { id, answer: checked, type };
+  }
 
   // useEffect(() => {
   //   let result = { id: checkedId.current, answer: checked };
@@ -131,26 +176,18 @@ function Quiz() {
   //   setCheckedBoxResult([result]);
   // }, [checked]);
 
-  const mock = [
-    {
-      id: "1111",
-      question: "This is a test check box",
-      choices: [
-        { id: 1, text: "checkbox 1" },
-        { id: 2, text: "checkbox 2" },
-        { id: 3, text: "checkbox 3" },
-        { id: 4, text: "checkbox 4" },
-      ],
-    },
-  ];
-
-  // console.log("checked 2", checked);
+  let disabledButton =
+    quiz && quiz.type === "multiple" ? false : !isSelect ? true : false;
 
   return (
     <>
       {quiz && (
         <div>
-          <h1>{!isFinish && `${quiz.id} ${`/`} ${allQuestion.length}`}</h1>
+          <h1>
+            {!isFinish &&
+              allQuestion.length > 0 &&
+              `Q. ${quiz.id} ${`/`} ${allQuestion.length}`}
+          </h1>
           {TimerCountdown()}
           <h2>{quiz.question}</h2>
           {quiz.type === "single" ? (
@@ -160,7 +197,7 @@ function Quiz() {
                 <>
                   <div
                     key={i}
-                    onClick={() => selectAnswer(quiz.id, d.id)}
+                    onClick={() => selectAnswer(quiz.id, d.id, quiz.type)}
                     className={isSelect === d.id ? "select" : ""}
                   >
                     {alphabet[i]}. {d.text}
@@ -175,18 +212,21 @@ function Quiz() {
                 <>
                   <Checkbox
                     key={i}
-                    onClick={(e) => selectAnswer(quiz.id, d.id)}
+                    onChange={(e) =>
+                      selectAnswerCheckbox(e, quiz.id, d.id, quiz.type)
+                    }
                     inputProps={{ "aria-label": "primary checkbox" }}
                     color="primary"
                     value={d.text}
                     ref={checkedId}
+                    checked={isCheckedbox(d.id)}
                   />
                   {d.text}
                 </>
               );
             })
           ) : (
-            <>{"no type"}</>
+            <></>
           )}
 
           {!isFinish && currentQuestion > 1 && (
@@ -196,16 +236,13 @@ function Quiz() {
           )}
           {!isFinish ? (
             currentQuestion === allQuestion.length ? (
-              <button
-                onClick={() => finishQuiz()}
-                disabled={!isSelect ? true : false}
-              >
+              <button onClick={() => finishQuiz()} disabled={disabledButton}>
                 finish
               </button>
             ) : (
               <button
                 onClick={() => setNextQuestion(currentQuestion)}
-                disabled={!isSelect ? true : false}
+                disabled={disabledButton}
               >
                 next
               </button>
