@@ -10,10 +10,13 @@ function Quiz() {
   const [quiz, setQuiz] = useState({});
   const [currentQuestion, setCurrentQuestion] = useState(1);
   const [scores, setScores] = useState(0);
-  const [timer, setTimer] = useState(10);
+  const [timer, setTimer] = useState(null);
   const [isFinish, setIsFinish] = useState(false);
   const alphabet = "abcdefghijklmnopqrstuvwxyz".split("");
+  const [userProfile, setUserProfile] = useState([]);
   // const [checkedTest, setChecked] = useState([]);
+
+  let userId = 1;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -29,6 +32,18 @@ function Quiz() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const response = await axios.get("http://localhost:4000/api/topic/");
+      if (response && response.data) {
+        let getUserProfile = response.data.filter((d) => d.id === userId);
+        setUserProfile(() => getUserProfile[0]);
+        setTimer(getUserProfile[0].timer);
+      }
+    };
+    fetchUserData();
+  }, []);
+
   const [anwsers, setAnwsers] = useState(() => []);
   const [isSelect, setIsSelect] = useState(() => "");
   const [isChecked, setIsChecked] = useState(() => {});
@@ -42,7 +57,6 @@ function Quiz() {
 
     setQuiz(() => displayQuestion[0]);
     setIsSelect(() => isSelectAns);
-    setTimer(10);
 
     setIsChecked(() => {});
     checked = {};
@@ -132,8 +146,11 @@ function Quiz() {
 
   const TimerCountdown = () => {
     useEffect(() => {
+      // setTimer(userProfile.timer);
       let interval = null;
-      if (timer > 0) {
+      if (timer === null) {
+        setIsFinish(false);
+      } else if (timer > 0) {
         interval = setInterval(() => {
           setTimer((timer) => timer - 1);
         }, 1000);
@@ -145,7 +162,9 @@ function Quiz() {
       return () => clearInterval(interval);
     }, [timer]);
 
-    return <div>{isFinish ? `` : `Time left: ${timer}`} </div>;
+    return (
+      <div>{isFinish || timer === null ? `` : `Time left: ${timer}`} </div>
+    );
   };
 
   const [checkedBoxResult, setCheckedBoxResult] = useState([]);
