@@ -1,9 +1,9 @@
-import './App.css';
-import { Quiz } from './Quiz'
+import "./App.css";
+import { Quiz } from "./Quiz";
 
 function App() {
   return (
-    <div className="App">
+    <div>
       <div className="App-header">
         <Quiz />
       </div>

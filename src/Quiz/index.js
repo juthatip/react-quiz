@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 // import Checkboxes from "./Checkbox";
-import Checkbox from "@material-ui/core/Checkbox";
+import { Container, Checkbox, Button, Grid } from "@material-ui/core";
 
 let checked = [];
 
@@ -38,7 +38,8 @@ function Quiz() {
       if (response && response.data) {
         let getUserProfile = response.data.filter((d) => d.id === userId);
         setUserProfile(() => getUserProfile[0]);
-        setTimer(getUserProfile[0].timer);
+        // setTimer(getUserProfile[0].timer);
+        setTimer(null);
       }
     };
     fetchUserData();
@@ -146,7 +147,6 @@ function Quiz() {
 
   const TimerCountdown = () => {
     useEffect(() => {
-      // setTimer(userProfile.timer);
       let interval = null;
       if (timer === null) {
         setIsFinish(false);
@@ -163,7 +163,11 @@ function Quiz() {
     }, [timer]);
 
     return (
-      <div>{isFinish || timer === null ? `` : `Time left: ${timer}`} </div>
+      <div>
+        {isFinish || timer === null
+          ? ``
+          : `<span className="material-icons">timer</span>Time left: ${timer}`}
+      </div>
     );
   };
 
@@ -200,82 +204,138 @@ function Quiz() {
 
   return (
     <>
-      {quiz && (
+      <Container>
         <div>
-          <h1>
-            {!isFinish &&
-              allQuestion.length > 0 &&
-              `Q. ${quiz.id} ${`/`} ${allQuestion.length}`}
-          </h1>
-          {TimerCountdown()}
-          <h2>{quiz.question}</h2>
-          {quiz.type === "single" ? (
-            quiz.choices &&
-            quiz.choices.map((d, i) => {
-              return (
-                <>
-                  <div
-                    key={i}
-                    onClick={() => selectAnswer(quiz.id, d.id, quiz.type)}
-                    className={isSelect === d.id ? "select" : ""}
-                  >
-                    {alphabet[i]}. {d.text}
+          User <span className="material-icons">face</span>
+        </div>
+        {quiz && (
+          <div>
+            <Grid container>
+              <Grid item xs={12} sm={6}>
+                <h1>
+                  {!isFinish &&
+                    allQuestion.length > 0 &&
+                    `Q. ${quiz.id} ${`/`} ${allQuestion.length}`}
+                </h1>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                {TimerCountdown()}
+              </Grid>
+            </Grid>
+            {/* <h1>
+              {!isFinish &&
+                allQuestion.length > 0 &&
+                `Q. ${quiz.id} ${`/`} ${allQuestion.length}`}
+            </h1>
+            <div>{TimerCountdown()}</div> */}
+            <h3>{quiz.question}</h3>
+            {quiz.type === "single" ? (
+              quiz.choices &&
+              quiz.choices.map((d, i) => {
+                return (
+                  <>
+                    <div
+                      key={i}
+                      onClick={() => selectAnswer(quiz.id, d.id, quiz.type)}
+                      className={isSelect === d.id ? "select" : ""}
+                    >
+                      {alphabet[i]}. {d.text}
+                    </div>
+                  </>
+                );
+              })
+            ) : quiz.type === "multiple" ? (
+              quiz.choices &&
+              quiz.choices.map((d, i) => {
+                return (
+                  <div>
+                    <Checkbox
+                      key={i}
+                      onChange={(e) =>
+                        selectAnswerCheckbox(e, quiz.id, d.id, quiz.type)
+                      }
+                      inputProps={{
+                        "aria-label": "primary checkbox",
+                      }}
+                      color="primary"
+                      value={d.text}
+                      ref={checkedId}
+                      checked={isCheckedbox(d.id)}
+                      className="checkbox-multi"
+                    />
+                    {d.text}
                   </div>
-                </>
-              );
-            })
-          ) : quiz.type === "multiple" ? (
-            quiz.choices &&
-            quiz.choices.map((d, i) => {
-              return (
-                <>
-                  <Checkbox
-                    key={i}
-                    onChange={(e) =>
-                      selectAnswerCheckbox(e, quiz.id, d.id, quiz.type)
-                    }
-                    inputProps={{ "aria-label": "primary checkbox" }}
-                    color="primary"
-                    value={d.text}
-                    ref={checkedId}
-                    checked={isCheckedbox(d.id)}
-                  />
-                  {d.text}
-                </>
-              );
-            })
-          ) : (
-            <></>
-          )}
-
-          {!isFinish && currentQuestion > 1 && (
-            <button onClick={() => setPrevQuestion(currentQuestion)}>
-              prev
-            </button>
-          )}
-          {!isFinish ? (
-            currentQuestion === allQuestion.length ? (
-              <button onClick={() => finishQuiz()} disabled={disabledButton}>
-                finish
-              </button>
+                );
+              })
             ) : (
-              <button
-                onClick={() => setNextQuestion(currentQuestion)}
-                disabled={disabledButton}
+              <></>
+            )}
+
+            <div className="wrap-button">
+              <Grid
+                container
+                direction="row"
+                justify="space-between"
+                alignItems="flex-start"
+                spacing={3}
               >
-                next
-              </button>
-            )
-          ) : (
-            <div></div>
-          )}
-        </div>
-      )}
-      {isFinish && (
-        <div>
-          Your scores: {scores} out of {allQuestion.length}
-        </div>
-      )}
+                {!isFinish && currentQuestion > 1 && (
+                  <Grid item xs={12} sm={6}>
+                    <Button
+                      variant="contained"
+                      onClick={() => setPrevQuestion(currentQuestion)}
+                      className="button"
+                    >
+                      <span className="material-icons">chevron_left</span>
+                      prev
+                    </Button>
+                  </Grid>
+                )}
+                {!isFinish ? (
+                  currentQuestion === allQuestion.length ? (
+                    <Grid item xs={12} sm={6} className="text-right">
+                      <Button
+                        variant="contained"
+                        onClick={() => finishQuiz()}
+                        disabled={disabledButton}
+                        className={`button ${
+                          disabledButton ? `` : `button-finish`
+                        }`}
+                      >
+                        finish
+                      </Button>
+                    </Grid>
+                  ) : (
+                    <Grid
+                      item
+                      xs={12}
+                      sm={currentQuestion === 1 ? 12 : 6}
+                      className="text-right"
+                    >
+                      <Button
+                        variant="contained"
+                        onClick={() => setNextQuestion(currentQuestion)}
+                        disabled={disabledButton}
+                        className="button"
+                      >
+                        next
+                        <span className="material-icons">chevron_right</span>
+                      </Button>
+                    </Grid>
+                  )
+                ) : (
+                  <div></div>
+                )}
+              </Grid>
+            </div>
+          </div>
+        )}
+        {isFinish && (
+          <div>
+            Your scores: {scores} out of {allQuestion.length}
+          </div>
+        )}
+      </Container>
     </>
   );
 }
