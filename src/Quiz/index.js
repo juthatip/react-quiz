@@ -3,6 +3,10 @@ import axios from "axios";
 // import Checkboxes from "./Checkbox";
 import { Container, Checkbox, Button, Grid } from "@material-ui/core";
 
+import TimerIcon from "@material-ui/icons/Timer";
+import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
+import ChevronRightIcon from "@material-ui/icons/ChevronRight";
+
 let checked = [];
 
 function Quiz() {
@@ -37,9 +41,10 @@ function Quiz() {
       const response = await axios.get("http://localhost:4000/api/topic/");
       if (response && response.data) {
         let getUserProfile = response.data.filter((d) => d.id === userId);
-        setUserProfile(() => getUserProfile[0]);
-        // setTimer(getUserProfile[0].timer);
-        setTimer(null);
+        if (getUserProfile.length) {
+          setUserProfile(() => getUserProfile[0]);
+          setTimer(getUserProfile[0].timer);
+        }
       }
     };
     fetchUserData();
@@ -129,10 +134,9 @@ function Quiz() {
   const finishQuiz = async () => {
     setTimer(0);
 
-    const resultAll = [...anwsers];
-
     let score = 0;
-    if (resultAll.length) {
+    if (anwsers.length) {
+      const resultAll = [...anwsers];
       const response = await axios.post(
         "http://localhost:4000/api/quiz/submit",
         resultAll
@@ -163,11 +167,7 @@ function Quiz() {
     }, [timer]);
 
     return (
-      <div>
-        {isFinish || timer === null
-          ? ``
-          : `<span className="material-icons">timer</span>Time left: ${timer}`}
-      </div>
+      <span>{isFinish || timer === null ? `` : `Time left: ${timer}`}</span>
     );
   };
 
@@ -205,29 +205,30 @@ function Quiz() {
   return (
     <>
       <Container>
-        <div>
-          User <span className="material-icons">face</span>
-        </div>
+        <div>{/* User <span className="material-icons">face</span> */}</div>
         {quiz && (
           <div>
-            <Grid container>
+            <Grid
+              container
+              direction="row"
+              justify="space-between"
+              alignItems="center"
+              className=""
+            >
               <Grid item xs={12} sm={6}>
-                <h1>
+                <div className="quiz-title">
                   {!isFinish &&
                     allQuestion.length > 0 &&
                     `Q. ${quiz.id} ${`/`} ${allQuestion.length}`}
-                </h1>
+                </div>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                {TimerCountdown()}
+              <Grid item xs={12} sm={6} className="text-right text-choice">
+                <div>
+                  {!isFinish && <TimerIcon className="timer-ic" />}
+                  {TimerCountdown()}
+                </div>
               </Grid>
             </Grid>
-            {/* <h1>
-              {!isFinish &&
-                allQuestion.length > 0 &&
-                `Q. ${quiz.id} ${`/`} ${allQuestion.length}`}
-            </h1>
-            <div>{TimerCountdown()}</div> */}
             <h3>{quiz.question}</h3>
             {quiz.type === "single" ? (
               quiz.choices &&
@@ -237,7 +238,9 @@ function Quiz() {
                     <div
                       key={i}
                       onClick={() => selectAnswer(quiz.id, d.id, quiz.type)}
-                      className={isSelect === d.id ? "select" : ""}
+                      className={`${
+                        isSelect === d.id ? "select" : ""
+                      } choice-single text-choice`}
                     >
                       {alphabet[i]}. {d.text}
                     </div>
@@ -261,7 +264,7 @@ function Quiz() {
                       value={d.text}
                       ref={checkedId}
                       checked={isCheckedbox(d.id)}
-                      className="checkbox-multi"
+                      className="checkbox-multi text"
                     />
                     {d.text}
                   </div>
@@ -286,7 +289,7 @@ function Quiz() {
                       onClick={() => setPrevQuestion(currentQuestion)}
                       className="button"
                     >
-                      <span className="material-icons">chevron_left</span>
+                      <ChevronLeftIcon />
                       prev
                     </Button>
                   </Grid>
@@ -319,7 +322,7 @@ function Quiz() {
                         className="button"
                       >
                         next
-                        <span className="material-icons">chevron_right</span>
+                        <ChevronRightIcon />
                       </Button>
                     </Grid>
                   )
@@ -331,8 +334,8 @@ function Quiz() {
           </div>
         )}
         {isFinish && (
-          <div>
-            Your scores: {scores} out of {allQuestion.length}
+          <div className="text-center">
+            Your scores {scores} / {allQuestion.length}
           </div>
         )}
       </Container>
