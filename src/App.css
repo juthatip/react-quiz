@@ -5,6 +5,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: #fff;
 }
 
 /* fallback */
@@ -58,7 +59,7 @@ body {
   color: #fff;
   padding: 5px;
 }
-.MuiCheckbox-colorPrimary.Mui-checked.checkbox-multi {
+.MuiCheckbox-co.lorPrimary.Mui-checked.checkbox-multi {
   color: #63c8f9;
 }
 
@@ -112,4 +113,39 @@ body {
 
 .text-center {
   text-align: center;
+}
+
+.input-field .MuiFormLabel-root,
+.input-field .MuiInputBase-root,
+.input-field .MuiInputBase-input {
+  color: #fff;
+}
+
+.input-field .MuiFormLabel-root.Mui-focused {
+  color: #63c8f9;
+}
+
+.input-field .MuiFormLabel-root.Mui-error {
+  color: #282c34;
+}
+
+.input-field .MuiInputBase-input {
+  border-bottom: 1px solid #fff;
+}
+
+.input-field .MuiInput-underline:after {
+  border-bottom: 2px solid #63c8f9;
+}
+
+.my-2 {
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.h-title {
+  font-size: 1.5rem;
+}
+
+.input-field .MuiFormHelperText-root {
+  color: #f44336;
 }
