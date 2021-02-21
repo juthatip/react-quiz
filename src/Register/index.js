@@ -73,7 +73,12 @@ export default function Register() {
           setErrorSubmit(false);
           let result = response.data;
           if (result.id) {
-            //history.goBack();
+            const userData = {
+              id: result.id,
+              firstName: result.firstName,
+            };
+            localStorage.setItem("userData", JSON.stringify(userData));
+            history.goBack();
           }
           //{"id":2,"email":"aa@aa.com","firstName":"dfdfdf","lastName":"test","updatedAt":"2021-02-21T18:03:54.797Z","createdAt":"2021-02-21T18:03:54.797Z"}
         }

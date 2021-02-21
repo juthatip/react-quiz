@@ -6,6 +6,8 @@ import { Container, Checkbox, Button, Grid } from "@material-ui/core";
 import TimerIcon from "@material-ui/icons/Timer";
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
+import FaceIcon from "@material-ui/icons/Face";
+import { useParams } from "react-router-dom";
 
 let checked = [];
 
@@ -17,10 +19,20 @@ function Quiz() {
   const [timer, setTimer] = useState(null);
   const [isFinish, setIsFinish] = useState(false);
   const alphabet = "abcdefghijklmnopqrstuvwxyz".split("");
-  const [userProfile, setUserProfile] = useState([]);
+  const [topic, setTopic] = useState([]);
+  const [userData, setUserData] = useState({});
+  const [currentTopicId, setCurrentTopicId] = useState("");
   // const [checkedTest, setChecked] = useState([]);
+  const { id } = useParams();
 
-  let userId = 1;
+  useEffect(() => {
+    const getUserData = localStorage.getItem("userData");
+    const userDataLocal = JSON.parse(getUserData);
+    if (userDataLocal) {
+      setUserData(userDataLocal);
+    }
+    setCurrentTopicId(id);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,11 +51,11 @@ function Quiz() {
   useEffect(() => {
     const fetchUserData = async () => {
       const response = await axios.get("http://localhost:4000/api/topic/");
-      if (response && response.data) {
-        let getUserProfile = response.data.filter((d) => d.id === userId);
-        if (getUserProfile.length) {
-          setUserProfile(() => getUserProfile[0]);
-          setTimer(getUserProfile[0].timer);
+      if (response && response.data && currentTopicId) {
+        let getTopic = response.data.filter((d) => d.id === currentTopicId);
+        if (getTopic.length) {
+          setTopic(() => getTopic[0]);
+          setTimer(getTopic[0].timer);
         }
       }
     };
@@ -205,7 +217,13 @@ function Quiz() {
   return (
     <>
       <Container>
-        <div>{/* User <span className="material-icons">face</span> */}</div>
+        <div>
+          {userData && (
+            <>
+              <FaceIcon /> {userData.firstName}
+            </>
+          )}
+        </div>
         {quiz && (
           <div>
             <Grid
@@ -234,17 +252,15 @@ function Quiz() {
               quiz.choices &&
               quiz.choices.map((d, i) => {
                 return (
-                  <>
-                    <div
-                      key={i}
-                      onClick={() => selectAnswer(quiz.id, d.id, quiz.type)}
-                      className={`${
-                        isSelect === d.id ? "select" : ""
-                      } choice-single text-choice`}
-                    >
-                      {alphabet[i]}. {d.text}
-                    </div>
-                  </>
+                  <div
+                    key={i}
+                    onClick={() => selectAnswer(quiz.id, d.id, quiz.type)}
+                    className={`${
+                      isSelect === d.id ? "select" : ""
+                    } choice-single text-choice`}
+                  >
+                    {alphabet[i]}. {d.text}
+                  </div>
                 );
               })
             ) : quiz.type === "multiple" ? (
