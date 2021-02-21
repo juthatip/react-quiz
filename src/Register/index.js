@@ -26,18 +26,36 @@ export default function Register() {
 
   let history = useHistory();
 
-  const handleSubmit = async () => {
-    console.log("email", email);
-    console.log("firstName", firstName);
-    console.log("lastName", lastName);
+  const validateForm = (label, val) => {
+    let isValid = true;
+    let text = "";
 
-    if (!email || !firstName || !lastName) {
-      setErrorSubmit(true);
-    } else {
-      setErrorSubmit(false);
+    if (!val) {
+      isValid = false;
+      text = `Required ${label}`;
+    } else if (val.length < 2) {
+      isValid = false;
+      text = `Invalid ${label}`;
+    } else if (label === "Email") {
+      if (!validateEmail(val)) {
+        isValid = false;
+        text = `${val} is not valid`;
+      }
     }
 
-    if (email && firstName && lastName) {
+    return { isValid, text };
+  };
+
+  function validateEmail(email) {
+    const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(String(email).toLowerCase());
+  }
+
+  const handleSubmit = async () => {
+    let isEmailValid = validateForm("Email", email).isValid;
+    let isFirstNameValid = validateForm("Firstname", firstName).isValid;
+    let isLastNameValid = validateForm("Lastname", lastName).isValid;
+    if (isEmailValid && isFirstNameValid && isLastNameValid) {
       const registerData = {
         email,
         firstName,
@@ -49,9 +67,16 @@ export default function Register() {
       );
 
       if (response.data) {
-        console.log(response.data);
-
-        // history.goBack();
+        if (response.data.errors) {
+          setErrorSubmit(true);
+        } else {
+          setErrorSubmit(false);
+          let result = response.data;
+          if (result.id) {
+            //history.goBack();
+          }
+          //{"id":2,"email":"aa@aa.com","firstName":"dfdfdf","lastName":"test","updatedAt":"2021-02-21T18:03:54.797Z","createdAt":"2021-02-21T18:03:54.797Z"}
+        }
       } else {
         setErrorSubmit(true);
       }
@@ -68,7 +93,7 @@ export default function Register() {
             label="Email"
             onChange={(e) => setEmail(e.target.value)}
             className="input-field"
-            helperText={!email && errorSubmit ? "Please fill your email" : ""}
+            helperText={validateForm("Email", email).text}
             type="email"
           />
         </div>
@@ -78,9 +103,7 @@ export default function Register() {
             label="Firstname"
             onChange={(e) => setFirstName(e.target.value)}
             className="input-field"
-            helperText={
-              !firstName && errorSubmit ? "Please fill your Firstname" : ""
-            }
+            helperText={validateForm("Firstname", firstName).text}
           />
         </div>
         <div>
@@ -89,9 +112,7 @@ export default function Register() {
             label="Lastname"
             onChange={(e) => setLastName(e.target.value)}
             className="input-field"
-            helperText={
-              !lastName && errorSubmit ? "Please fill your Lastname" : ""
-            }
+            helperText={validateForm("Lastname", lastName).text}
           />
         </div>
         <div className="text-center my-2 button-submit">
@@ -102,7 +123,9 @@ export default function Register() {
           >
             Submit
           </Button>
-          {errorSubmit ? "Please try again" : ""}
+          <div className="error-text">
+            {errorSubmit ? "Someing went wrong. Please try again" : ""}
+          </div>
         </div>
       </div>
     </form>

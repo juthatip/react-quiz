@@ -149,3 +149,9 @@ body {
 .input-field .MuiFormHelperText-root {
   color: #f44336;
 }
+
+.error-text {
+  color: #f44336;
+  font-size: 1rem;
+  margin-top: 5px;
+}
