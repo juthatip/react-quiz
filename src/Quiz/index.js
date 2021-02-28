@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Fragment } from "react";
 import axios from "axios";
 // import Checkboxes from "./Checkbox";
 import { Container, Checkbox, Button, Grid } from "@material-ui/core";
@@ -7,11 +7,14 @@ import TimerIcon from "@material-ui/icons/Timer";
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 import FaceIcon from "@material-ui/icons/Face";
-import { useParams } from "react-router-dom";
+import { useParams, useHistory } from "react-router-dom";
 
 let checked = [];
 
 function Quiz() {
+  const { id } = useParams();
+  let history = useHistory();
+
   const [allQuestion, setAllQuestion] = useState([]);
   const [quiz, setQuiz] = useState({});
   const [currentQuestion, setCurrentQuestion] = useState(1);
@@ -21,38 +24,76 @@ function Quiz() {
   const alphabet = "abcdefghijklmnopqrstuvwxyz".split("");
   const [topic, setTopic] = useState([]);
   const [userData, setUserData] = useState({});
-  const [currentTopicId, setCurrentTopicId] = useState("");
-  // const [checkedTest, setChecked] = useState([]);
-  const { id } = useParams();
+  const [currentTopicId, setCurrentTopicId] = useState(id);
+  const [anwsers, setAnwsers] = useState(() => []);
 
   useEffect(() => {
-    const getUserData = localStorage.getItem("userData");
-    const userDataLocal = JSON.parse(getUserData);
-    if (userDataLocal) {
-      setUserData(userDataLocal);
-    }
-    setCurrentTopicId(id);
-  }, []);
+    const getUserData = getLocalStorageUser();
 
-  useEffect(() => {
     const fetchData = async () => {
-      const response = await axios.get("http://localhost:4000/api/quiz/1");
+      const response = await axios.get(`http://localhost:4000/api/quiz/${id}`);
       setAllQuestion(response.data);
       if (response.data) {
-        let displayQuestion = response.data.filter(
-          (d) => d.id === currentQuestion
-        );
+        let currentQ = getUserData ? getUserData : currentQuestion;
+        let displayQuestion = response.data.filter((d) => d.id === currentQ);
         setQuiz(() => displayQuestion[0]);
       }
     };
+
     fetchData();
+    setCurrentTopicId(id);
   }, []);
+
+  const getLocalStorageUser = () => {
+    const getUserData = localStorage.getItem("userData");
+    const userDataLocal = JSON.parse(getUserData);
+    console.log("userDataLocal", userDataLocal);
+    if (userDataLocal) {
+      console.log("local", userDataLocal);
+      setUserData(userDataLocal);
+      if (
+        userDataLocal.answers &&
+        Object.keys(userDataLocal.answers).length !== 0
+      ) {
+        console.log("setAn", userDataLocal.answers);
+        setAnwsers(userDataLocal.answers);
+
+        const dataSort = userDataLocal.answers.sort((a, b) => {
+          return b.id - a.id;
+        });
+        if (dataSort.length > 0) {
+          let id = dataSort[0].id;
+          setCurrentQuestion(id);
+          let ansQuiz = userDataLocal.answers.filter((a) => a.id === id);
+          let isSelectAns = ansQuiz.length > 0 ? ansQuiz[0].answer : "";
+          setIsSelect(isSelectAns);
+          if (ansQuiz.length > 0 && ansQuiz[0].type === "multiple") {
+            let defaultAns = ansQuiz[0].answer.reduce((result, item, i) => {
+              result[item] = true;
+              return result;
+            }, {});
+
+            setIsChecked({
+              ...defaultAns,
+            });
+          }
+
+          return id;
+        }
+      }
+      return "";
+    } else {
+      history.push("/register");
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
       const response = await axios.get("http://localhost:4000/api/topic/");
       if (response && response.data && currentTopicId) {
-        let getTopic = response.data.filter((d) => d.id === currentTopicId);
+        let getTopic = response.data.filter(
+          (d) => d.id === parseInt(currentTopicId)
+        );
         if (getTopic.length) {
           setTopic(() => getTopic[0]);
           setTimer(getTopic[0].timer);
@@ -62,43 +103,35 @@ function Quiz() {
     fetchUserData();
   }, []);
 
-  const [anwsers, setAnwsers] = useState(() => []);
   const [isSelect, setIsSelect] = useState(() => "");
   const [isChecked, setIsChecked] = useState(() => {});
 
   function setNextQuestion(currentQuestion) {
     currentQuestion = currentQuestion + 1;
-    setCurrentQuestion(() => currentQuestion);
-    let displayQuestion = allQuestion.filter((d) => d.id === currentQuestion);
-    let ansQuiz = anwsers.filter((a) => a.id === currentQuestion);
-    let isSelectAns = ansQuiz.length > 0 ? ansQuiz[0].answer : "";
+    updateAnswer(currentQuestion);
 
-    setQuiz(() => displayQuestion[0]);
-    setIsSelect(() => isSelectAns);
+    const getAnwsers = {
+      ...userData,
+      answers: anwsers,
+    };
 
-    setIsChecked(() => {});
-    checked = {};
-    if (ansQuiz.length > 0 && ansQuiz[0].type === "multiple") {
-      let defaultAns = ansQuiz[0].answer.reduce((result, item, i) => {
-        result[item] = true;
-        return result;
-      }, {});
-      setIsChecked({
-        ...defaultAns,
-      });
-    }
+    localStorage.setItem("userData", JSON.stringify(getAnwsers));
   }
 
   function setPrevQuestion(currentQuestion) {
     currentQuestion = currentQuestion - 1;
+    updateAnswer(currentQuestion);
+  }
+
+  function updateAnswer(currentQuestion) {
     setCurrentQuestion(() => currentQuestion);
     let displayQuestion = allQuestion.filter((d) => d.id === currentQuestion);
-    setQuiz(() => displayQuestion[0]);
     let ansQuiz = anwsers.filter((a) => a.id === currentQuestion);
     let isSelectAns = ansQuiz.length > 0 ? ansQuiz[0].answer : "";
+
+    setQuiz(() => displayQuestion[0]);
     setIsSelect(isSelectAns);
 
-    checked = {};
     if (ansQuiz.length > 0 && ansQuiz[0].type === "multiple") {
       let defaultAns = ansQuiz[0].answer.reduce((result, item, i) => {
         result[item] = true;
@@ -144,6 +177,7 @@ function Quiz() {
   }
 
   const finishQuiz = async () => {
+    localStorage.removeItem("userData");
     setTimer(0);
 
     let score = 0;
@@ -161,29 +195,22 @@ function Quiz() {
     setIsFinish(true);
   };
 
-  const TimerCountdown = () => {
-    useEffect(() => {
-      let interval = null;
-      if (timer === null) {
-        setIsFinish(false);
-      } else if (timer > 0) {
-        interval = setInterval(() => {
-          setTimer((timer) => timer - 1);
-        }, 1000);
-      } else {
-        clearInterval(interval);
-        finishQuiz();
-      }
+  useEffect(() => {
+    let interval = null;
+    if (timer === null) {
+      setIsFinish(false);
+    } else if (timer > 0) {
+      interval = setInterval(() => {
+        setTimer((timer) => timer - 1);
+      }, 1000);
+    } else {
+      clearInterval(interval);
+      finishQuiz();
+    }
 
-      return () => clearInterval(interval);
-    }, [timer]);
+    return () => clearInterval(interval);
+  }, [timer]);
 
-    return (
-      <span>{isFinish || timer === null ? `` : `Time left: ${timer}`}</span>
-    );
-  };
-
-  const [checkedBoxResult, setCheckedBoxResult] = useState([]);
   const checkedId = useRef(null);
 
   function HandleChange(id, val, type) {
@@ -205,26 +232,13 @@ function Quiz() {
     return { id, answer: checked, type };
   }
 
-  // useEffect(() => {
-  //   let result = { id: checkedId.current, answer: checked };
-  //   console.log("id", checkedId.current);
-  //   setCheckedBoxResult([result]);
-  // }, [checked]);
-
   let disabledButton =
     quiz && quiz.type === "multiple" ? false : !isSelect ? true : false;
 
   return (
     <>
       <Container>
-        <div>
-          {userData && (
-            <>
-              <FaceIcon /> {userData.firstName}
-            </>
-          )}
-        </div>
-        {quiz && (
+        {quiz && Object.keys(quiz).length !== 0 ? (
           <div>
             <Grid
               container
@@ -242,8 +256,14 @@ function Quiz() {
               </Grid>
               <Grid item xs={12} sm={6} className="text-right text-choice">
                 <div>
-                  {!isFinish && <TimerIcon className="timer-ic" />}
-                  {TimerCountdown()}
+                  {isFinish || timer === null ? (
+                    ``
+                  ) : (
+                    <>
+                      <TimerIcon className="timer-ic" />
+                      Time : {timer}
+                    </>
+                  )}
                 </div>
               </Grid>
             </Grid>
@@ -252,14 +272,15 @@ function Quiz() {
               quiz.choices &&
               quiz.choices.map((d, i) => {
                 return (
-                  <div
-                    key={i}
-                    onClick={() => selectAnswer(quiz.id, d.id, quiz.type)}
-                    className={`${
-                      isSelect === d.id ? "select" : ""
-                    } choice-single text-choice`}
-                  >
-                    {alphabet[i]}. {d.text}
+                  <div key={i}>
+                    <span
+                      className={`${
+                        isSelect === d.id ? "select" : ""
+                      } choice-single text-choice`}
+                      onClick={() => selectAnswer(quiz.id, d.id, quiz.type)}
+                    >
+                      {alphabet[i]}. {d.text}
+                    </span>
                   </div>
                 );
               })
@@ -267,9 +288,8 @@ function Quiz() {
               quiz.choices &&
               quiz.choices.map((d, i) => {
                 return (
-                  <div>
+                  <div key={i}>
                     <Checkbox
-                      key={i}
                       onChange={(e) =>
                         selectAnswerCheckbox(e, quiz.id, d.id, quiz.type)
                       }
@@ -348,10 +368,18 @@ function Quiz() {
               </Grid>
             </div>
           </div>
+        ) : !allQuestion.length ? (
+          <div className="text-center">
+            <h2>{"Quiz not found"}</h2>
+          </div>
+        ) : (
+          <Fragment />
         )}
         {isFinish && (
           <div className="text-center">
-            Your scores {scores} / {allQuestion.length}
+            <h2>
+              Your scores {scores} / {allQuestion.length}{" "}
+            </h2>
           </div>
         )}
       </Container>

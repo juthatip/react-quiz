@@ -94,6 +94,9 @@ body {
 .MuiCheckbox-colorPrimary.Mui-checked:hover {
   background-color: rgb(255 255 255 / 4%);
 }
+.checkbox-multi.MuiCheckbox-colorPrimary.Mui-checked {
+  color: #63c8f9;
+}
 .choice-single {
   margin-bottom: 5px;
 }
@@ -115,10 +118,13 @@ body {
   text-align: center;
 }
 
-.input-field .MuiFormLabel-root,
 .input-field .MuiInputBase-root,
 .input-field .MuiInputBase-input {
   color: #fff;
+}
+
+.input-field .MuiFormLabel-root {
+  color: #a8a8a8;
 }
 
 .input-field .MuiFormLabel-root.Mui-focused {

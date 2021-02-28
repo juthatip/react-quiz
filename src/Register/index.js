@@ -32,7 +32,7 @@ export default function Register() {
 
     if (!val) {
       isValid = false;
-      text = `Required ${label}`;
+      text = `Required ${label}*`;
     } else if (val.length < 2) {
       isValid = false;
       text = `Invalid ${label}`;
@@ -80,7 +80,6 @@ export default function Register() {
             localStorage.setItem("userData", JSON.stringify(userData));
             history.goBack();
           }
-          //{"id":2,"email":"aa@aa.com","firstName":"dfdfdf","lastName":"test","updatedAt":"2021-02-21T18:03:54.797Z","createdAt":"2021-02-21T18:03:54.797Z"}
         }
       } else {
         setErrorSubmit(true);
